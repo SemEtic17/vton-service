@@ -1,0 +1,7 @@
+# vton-service dependencies
+fastapi
+uvicorn[standard]
+requests
+
+# the main package (the repo itself) will be installed in editable mode
+-e .

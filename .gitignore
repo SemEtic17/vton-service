@@ -49,11 +49,17 @@ coverage.xml
 # Environments
 .env
 .venv
+.venv3/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# System files
+uvicorn.pid
+.DS_Store
+Thumbs.db
 
 # IDEs
 .idea/
@@ -76,10 +82,6 @@ weights/
 # Cache directories
 .cache/
 *.cache
-
-# OS files
-.DS_Store
-Thumbs.db
 
 # Logs
 *.log
