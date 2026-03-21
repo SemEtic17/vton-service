@@ -1,0 +1,8 @@
+{
+  "name": "vton-service",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "VTON_WEIGHTS_DIR=./weights VTON_DEVICE=cpu ./.venv/bin/uvicorn server:app --host 127.0.0.1 --port 8000 --log-level info"
+  }
+}

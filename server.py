@@ -47,27 +47,52 @@ def run_tryon(req: TryOnRequest):
         # Ensure the heavy ML pipeline is initialized on first request.
         ensure_pipeline_initialized()
 
-        # download images
-        resp = requests.get(req.person_image_url)
-        resp.raise_for_status()
-        person_img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+        # Basic URL validation: ensure they are absolute and use http/https
+        if not str(req.person_image_url).startswith(("http://", "https://")):
+            raise HTTPException(status_code=400, detail="Invalid person_image_url scheme")
+        if not str(req.garment_image_url).startswith(("http://", "https://")):
+            raise HTTPException(status_code=400, detail="Invalid garment_image_url scheme")
 
-        resp = requests.get(req.garment_image_url)
-        resp.raise_for_status()
-        garment_img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+        # download images with timeout
+        try:
+            resp = requests.get(str(req.person_image_url), timeout=10)
+            resp.raise_for_status()
+            person_img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error downloading person image: {e}")
+            raise HTTPException(status_code=400, detail="Failed to download person image")
+        except Exception as e:
+            logging.error(f"Error processing person image: {e}")
+            raise HTTPException(status_code=400, detail="Invalid person image format")
+
+        try:
+            resp = requests.get(str(req.garment_image_url), timeout=10)
+            resp.raise_for_status()
+            garment_img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error downloading garment image: {e}")
+            raise HTTPException(status_code=400, detail="Failed to download garment image")
+        except Exception as e:
+            logging.error(f"Error processing garment image: {e}")
+            raise HTTPException(status_code=400, detail="Invalid garment image format")
 
         start_time = time.time()
-        result = pipeline(
-            person_image=person_img,
-            garment_image=garment_img,
-            category=req.category,
-            garment_photo_type=req.garment_photo_type,
-            num_samples=req.num_samples,
-            num_timesteps=req.num_timesteps,
-            guidance_scale=req.guidance_scale,
-            seed=req.seed,
-            segmentation_free=req.segmentation_free,
-        )
+        try:
+            result = pipeline(
+                person_image=person_img,
+                garment_image=garment_img,
+                category=req.category,
+                garment_photo_type=req.garment_photo_type,
+                num_samples=req.num_samples,
+                num_timesteps=req.num_timesteps,
+                guidance_scale=req.guidance_scale,
+                seed=req.seed,
+                segmentation_free=req.segmentation_free,
+            )
+        except Exception as e:
+            logging.error(f"Pipeline error: {e}")
+            raise HTTPException(status_code=500, detail="VTON pipeline processing failed")
+            
         elapsed = int((time.time() - start_time) * 1000)
 
         if not result or len(result.images) == 0:
@@ -84,8 +109,11 @@ def run_tryon(req: TryOnRequest):
             "processingTimeMs": elapsed,
             "modelVersion": "fashn-v1.5",
         }
+    except HTTPException:
+        raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        logging.error(f"Unexpected error in run_tryon: {exc}")
+        raise HTTPException(status_code=500, detail="An internal error occurred during try-on")
 
 
 @app.get("/health")

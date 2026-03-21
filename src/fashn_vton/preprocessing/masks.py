@@ -1,4 +1,5 @@
 """Mask processing utilities."""
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -37,16 +38,14 @@ def create_bounded_mask(mask: np.ndarray) -> np.ndarray:
     return bounded_mask
 
 
-def asymmetric_dilate_mask(
-    mask: np.ndarray, right: int, left: int, up: int, down: int
-) -> np.ndarray:
+def asymmetric_dilate_mask(mask: np.ndarray, left: int = 0, right: int = 0, up: int = 0, down: int = 0) -> np.ndarray:
     """
-    Dilate mask asymmetrically in different directions.
+    Dilate mask asymmetrically along axes.
 
     Args:
-        mask: Input binary mask
-        right: Dilation amount to the right
+        mask: Binary mask
         left: Dilation amount to the left
+        right: Dilation amount to the right
         up: Dilation amount upward
         down: Dilation amount downward
 
@@ -71,7 +70,7 @@ def asymmetric_dilate_mask(
 def create_contour_following_mask(
     mask: np.ndarray,
     brush_radius: int = 36,
-    smoothing_sigma: float | None = None,
+    smoothing_sigma: Optional[float] = None,
     supersample: int = 1,
     keep_holes: bool = False,
 ) -> np.ndarray:
